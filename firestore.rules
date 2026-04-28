@@ -1,0 +1,33 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── USERS collection ──────────────────────────────────────
+    // Only the user themselves can read/write their own profile
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── PRODUCTS collection ───────────────────────────────────
+    // A product can only be accessed by the user who owns it
+    match /products/{productId} {
+
+      // READ: only the owner
+      allow read: if request.auth != null
+                  && resource.data.userId == request.auth.uid;
+
+      // CREATE: must be authenticated, userId field must match the caller
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid;
+
+      // UPDATE: only the owner can update
+      allow update: if request.auth != null
+                    && resource.data.userId == request.auth.uid;
+
+      // DELETE: only the owner can delete
+      allow delete: if request.auth != null
+                    && resource.data.userId == request.auth.uid;
+    }
+  }
+}
